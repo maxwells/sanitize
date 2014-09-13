@@ -14,9 +14,11 @@ Given a whitelist configuration
 
 ```json
 {
-    "div": ["id", "class"],
-    "b": [],
-    "i": []
+    "elements": {
+        "div": ["id", "class"],
+        "b": [],
+        "i": []
+    }
 }
 ```
 
@@ -63,11 +65,53 @@ Note how the `style` attribute was still removed from the `div` element, while t
 
 ### Usage
 
+Create JSON configuration. Below are the currently supported options
+
+| key | value type | default | description |
+|-----|------------|---------|-------------|
+| stripComments | `boolean` | `false` | Whether or not to strip comment nodes |
+| stripWhitespace | `boolean` | `false` | Whether or not to strip whitespace (leading and trailing tabs or spaces) |
+| elements| `Object` | `{}` | a list of K-V pairs where the keys are whitelisted element tags and the values are arrays of whitelisted attribtues for that element |
+
+```json
+{
+    "stripComments": true,
+    "stripWhitespace": true,
+    "elements":
+        "html": ["xmlns"],
+        "head": [],
+        "body": [],
+        "div": ["id", "class"],
+    }
+}
+```
+
+Create a `sanitize.Whitelist` object from a json file with `sanitize.WhitelistFromFile(filepath string)` or from a []byte with `sanitize.NewWhitelist(byteArray []byte)` and use it to parse some HTML:
+
+```go
+whitelist, err := sanitize.WhitelistFromFile("./path/to/file.json")
+// or create from a json []byte
+// whitelist, err := sanitize.NewWhitelist(byteArray)
+
+f, _ := os.Open("./path/to/example.html")
+sanitized, _ := whitelist.SanitizeRemove(f) // takes any io.Reader
+
+fmt.Printf("sanitized html: %d", sanitized)
+```
+
 ### Steps to 1.0
-- [x] Support sanitization that removes non-whitelisted nodes entirely
 - [ ] Support sanitization that unwraps non-whitelisted nodes, allowing the text and/or whitelisted subtree through
-- [ ] Whitelist-level configuration options (eg. `stripWhitespace`, ``)
+- [x] Whitelist-level configuration options (eg. `stripWhitespace`)
 - [ ] Efficient attribute checking by not allocating a new slice on every whitelisted attribute for an element
 - [ ] Support non `string` type attribute values
 - [ ] Tests
-- [ ] Refactor configuration parsing to have io.Reader interface instead of expecting a filepath
+- [x] Refactor configuration parsing to have []byte interface instead of expecting a filepath
+- [ ] Create sane defaults
+
+### Contributing
+
+Head over to the [issues page](https://github.com/maxwells/go-html-sanitizer/issues) or open a [pull request](https://github.com/maxwells/go-html-sanitizer/pulls). Please ensure your code is documented, all existing tests pass, and any new features have tests before submitting a pull request. If you want to check in whether a pull request for a new feature would be accepted, feel free to open an issue.
+
+### License
+
+MIT

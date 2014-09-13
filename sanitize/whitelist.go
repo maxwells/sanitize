@@ -5,45 +5,46 @@ import (
 	"bytes"
 	"code.google.com/p/go.net/html"
 	"errors"
+	"encoding/json"
+	"strings"
 )
 
-type Attribute struct {
-	Name  		string
-}
-
-type Element struct {
-	Tag			string
-	Attributes 	[]*Attribute // if no attributes are specified, all are allowed
-}
-
 type Whitelist struct {
-	Elements	[]*Element
+	StripWhitespace	bool				`json:"stripWhitespace"`
+	StripComments 	bool				`json:"stripComments"`
+	Elements		map[string][]string	`json:"elements"`
 }
 
-func (w *Whitelist) AddElement(e *Element) {
-	w.Elements = append(w.Elements, e)
+func (w *Whitelist) AddElement(elementTag string, attributes []string) {
+	w.Elements[elementTag] = attributes
 }
 
-func (w *Whitelist) GetElement(elementName string) (*Element, bool) {
-	for _, element := range(w.Elements) {
-		if element.Tag == elementName {
-			return element, true
+func (w *Whitelist) HasElement(elementTag string) (bool) {
+	_, ok := w.Elements[elementTag]
+	return ok
+}
+
+func (w *Whitelist) GetAttributesForElement(elementTag string) ([]string) {
+	val, _ := w.Elements[elementTag]
+	return val
+}
+
+func (w *Whitelist) HasAttributeForElement(elementTag string, attributeName string) (bool) {
+	val, ok := w.Elements[elementTag]
+	if !ok {
+		return false
+	}
+	for _, attribute := range(val) {
+		if attribute == attributeName {
+			return true
 		}
 	}
-	return nil, false
+	return false
 }
 
-func (e *Element) AddAttribute(a *Attribute) {
-	e.Attributes = append(e.Attributes, a)
-}
-
-func (e *Element) GetAttribute(attributeName string) (*Attribute, bool) {
-	for _, attribute := range(e.Attributes) {
-		if attribute.Name == attributeName {
-			return attribute, true
-		}
-	}
-	return nil, false
+func (w *Whitelist) ToJSON() (string, error) {
+	v, err := json.Marshal(w)
+	return string(v), err
 }
 
 // traverseTree takes a node and a function to perform on that node.
@@ -75,10 +76,12 @@ func (w *Whitelist) sanitizeRemove(n *html.Node) (error) {
 	case html.ErrorNode:
 		return errors.New("Unable to parse HTML")
   	case html.TextNode:
+  		if w.StripWhitespace {
+  			n.Data = strings.TrimSpace(n.Data)
+  		}
   	case html.DocumentNode:
   	case html.ElementNode:
-  		element, hasElement := w.GetElement(n.Data)
-  		if !hasElement {
+  		if !w.HasElement(n.Data) {
   			if n.Parent != nil {
   				n.Parent.RemoveChild(n)
   			}
@@ -88,13 +91,18 @@ func (w *Whitelist) sanitizeRemove(n *html.Node) (error) {
   		attributesToKeep := make([]html.Attribute, 0)
 
   		for _, attribute := range(n.Attr) {
-			_, hasAttribute := element.GetAttribute(attribute.Key)
-			if hasAttribute {
+			if w.HasAttributeForElement(n.Data, attribute.Key) {
 				attributesToKeep = append(attributesToKeep, attribute)
 			}
 		}
 		n.Attr = attributesToKeep
   	case html.CommentNode:
+  		if w.StripComments {
+  			if n.Parent != nil {
+  				n.Parent.RemoveChild(n)
+  			}
+  			break
+  		}
   	case html.DoctypeNode:
 	}
 

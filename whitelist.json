@@ -1,0 +1,9 @@
+{
+  "html": [],
+  "head": [],
+  "body": [],
+  "div": ["id", "class", "style"],
+  "b": [],
+  "i": [],
+  "audio": ["controls"]
+}

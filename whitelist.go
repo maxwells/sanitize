@@ -47,26 +47,6 @@ func (w *Whitelist) ToJSON() (string, error) {
 	return string(v), err
 }
 
-// traverseTree takes a node and a function to perform on that node.
-// It processess the tree withNode in pre-order.
-//
-// if withNode returns false, the subtree below this node will be
-// skipped entirely.
-func traverseTree(node *html.Node, withNode func(*html.Node) (bool, error)) (error) {
-	processSubtree, err := withNode(node)
-	if err != nil || !processSubtree {
-		return err
-	}
-
-	for c := node.FirstChild; c != nil; c = c.NextSibling {
-		err := traverseTree(c, withNode)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // sanitizeRemove traverses pre-order over the nodes,
 // removing any element nodes that are not whitelisted
 // and and removing any attributes that are not whitelisted

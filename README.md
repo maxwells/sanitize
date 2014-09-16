@@ -77,7 +77,7 @@ Create JSON configuration. Below are the currently supported options
 {
     "stripComments": true,
     "stripWhitespace": true,
-    "elements":
+    "elements": {
         "html": ["xmlns"],
         "head": [],
         "body": [],
@@ -107,6 +107,8 @@ fmt.Printf("sanitized html: %d", sanitized)
 - [ ] Tests
 - [x] Refactor configuration parsing to have []byte interface instead of expecting a filepath
 - [ ] Create sane defaults
+
+### Known Issues
 
 ### Contributing
 

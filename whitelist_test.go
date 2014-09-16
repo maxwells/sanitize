@@ -165,36 +165,36 @@ func TestStripComments(t *testing.T) {
 // 	}	
 // }
 
-// func TestCanStripHead(t *testing.T) {
-// 	htmlDoc := `<!DOCTYPE html><html><head></head></html>`
-// 	expectedOutput := `<!DOCTYPE html><html></html>`
-// 	config := `{
-// 		"elements": {
-// 			"html": []
-// 		}
-// 	}`
+func TestCanStripHead(t *testing.T) {
+	htmlDoc := `<!DOCTYPE html><html><head></head></html>`
+	expectedOutput := `<!DOCTYPE html><html></html>`
+	config := `{
+		"elements": {
+			"html": []
+		}
+	}`
 
-// 	whitelist, _ := NewWhitelist([]byte(config))
-// 	output, _ := whitelist.SanitizeRemove(strings.NewReader(htmlDoc))
+	whitelist, _ := NewWhitelist([]byte(config))
+	output, _ := whitelist.SanitizeRemove(strings.NewReader(htmlDoc))
 
-// 	if output != expectedOutput {
-// 		t.Errorf("failed: %s != %s", output, expectedOutput)
-// 	}
-// }
+	if output != expectedOutput {
+		t.Errorf("failed: %s != %s", output, expectedOutput)
+	}
+}
 
-// func TestCanStripBody(t *testing.T) {
-// 	htmlDoc := `<!DOCTYPE html><html><body></body></html>`
-// 	expectedOutput := `<!DOCTYPE html><html></html>`
-// 	config := `{
-// 		"elements": {
-// 			"html": []
-// 		}
-// 	}`
+func TestCanStripBody(t *testing.T) {
+	htmlDoc := `<!DOCTYPE html><html><body></body></html>`
+	expectedOutput := `<!DOCTYPE html><html></html>`
+	config := `{
+		"elements": {
+			"html": []
+		}
+	}`
 
-// 	whitelist, _ := NewWhitelist([]byte(config))
-// 	output, _ := whitelist.SanitizeRemove(strings.NewReader(htmlDoc))
+	whitelist, _ := NewWhitelist([]byte(config))
+	output, _ := whitelist.SanitizeRemove(strings.NewReader(htmlDoc))
 
-// 	if output != expectedOutput {
-// 		t.Errorf("failed: %s != %s", output, expectedOutput)
-// 	}
-// }
+	if output != expectedOutput {
+		t.Errorf("failed: %s != %s", output, expectedOutput)
+	}
+}

@@ -2,6 +2,8 @@
 
 A dead simple Go HTML whitelist-sanitization library.
 
+[![wercker status](https://app.wercker.com/status/c6d103a9e8ddfa071672e62cfc2aea6a/s/master "wercker status")](https://app.wercker.com/project/bykey/c6d103a9e8ddfa071672e62cfc2aea6a)
+
 ### Goal
 
 Efficiently support the following types of HTML sanitization through simple programmatic or JSON configuration:

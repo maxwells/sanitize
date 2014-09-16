@@ -57,6 +57,45 @@ func TestSanitizeRemoveRemovesNonWhitelistedNodes(t *testing.T) {
 	}
 }
 
+func TestSanitizeUnwrapUnwrapsNonWhitelistedNodes(t *testing.T) {
+	htmlDoc := `<!DOCTYPE html>
+				<html>
+					<head>
+						<title>My Title</title>
+					</head>
+					<body>
+						<div>
+							<b>Bold</b>
+							<i>Italic</i>
+							<em>Emphatic</em>
+						</div>
+						<div>
+							<i>After</i>
+						</div>
+					</body>
+				</html>`
+	expectedOutput := `<!DOCTYPE html><html><head><title>My Title</title></head><body><b>Bold</b><i>Italic</i><em>Emphatic</em><i>After</i></body></html>`
+	config := `{
+		"stripWhitespace": true,
+		"elements": {
+			"html": [],
+			"head": [],
+			"title": [],
+			"body": [],
+			"b": [],
+			"i": [],
+			"em": []
+		}
+	}`
+
+	whitelist, _ := NewWhitelist([]byte(config))
+	output, _ := whitelist.SanitizeUnwrap(strings.NewReader(htmlDoc))
+
+	if output != expectedOutput {
+		t.Errorf("failed: %s != %s", output, expectedOutput)
+	}
+}
+
 func TestStripWhitespace(t *testing.T) {
 	htmlDoc := `<!DOCTYPE html>
 				<html>

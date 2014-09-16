@@ -47,17 +47,24 @@ func (w *Whitelist) ToJSON() (string, error) {
 	return string(v), err
 }
 
+// Remove all attributes on the provided node
+// that are not contained within this whitelist
 func (w *Whitelist) sanitizeAttributes(n *html.Node) {
-	attributesToKeep := make([]html.Attribute, 0)
+	attributes := make([]html.Attribute, len(n.Attr))
 
+	i := 0
 	for _, attribute := range(n.Attr) {
 		if w.HasAttributeForElement(n.Data, attribute.Key) {
-			attributesToKeep = append(attributesToKeep, attribute)
+			attributes[i] = attribute
+			i += 1
 		}
 	}
-	n.Attr = attributesToKeep
+	n.Attr = attributes[0:i]
+
 }
 
+// Remove the comment if this whitelist is configured
+// with the StripComments configuration
 func (w *Whitelist) handleComment(n *html.Node) {
 	if w.StripComments {
 			if n.Parent != nil {
@@ -66,17 +73,22 @@ func (w *Whitelist) handleComment(n *html.Node) {
 	}
 }
 
+// Strip whitespace if this whitelist is configured
+// with the StripWhitespace configuration
 func (w *Whitelist) handleText(n *html.Node) {
 	if w.StripWhitespace {
 		n.Data = strings.TrimSpace(n.Data)
 	}
 }
 
-// sanitizeRemove traverses pre-order over the nodes,
-// removing any element nodes that are not whitelisted
-// and and removing any attributes that are not whitelisted
-// from a given element node
-func (w *Whitelist) sanitizeRemove(n *html.Node) (error) {
+// Helper function to process a specific node.
+// Defers logic around how to handle ElementNodes to
+// the caller.
+//
+// Returns the return value of handleElement:
+// a boolean describing whether the children
+// of the node should be further sanitized (ie. not skipped).
+func (w *Whitelist) sanitizeNode(n *html.Node, handleElement func(*html.Node) (bool)) (error) {
 	switch n.Type {
 	case html.ErrorNode:
 		return errors.New("Unable to parse HTML")
@@ -84,11 +96,8 @@ func (w *Whitelist) sanitizeRemove(n *html.Node) (error) {
   		w.handleText(n)
   	case html.DocumentNode:
   	case html.ElementNode:
-  		if !w.HasElement(n.Data) {
-  			if n.Parent != nil {
-  				n.Parent.RemoveChild(n)
-  			}
-  			break
+  		if (!handleElement(n)) {
+  			return nil
   		}
   		w.sanitizeAttributes(n)
   	case html.CommentNode:
@@ -96,21 +105,35 @@ func (w *Whitelist) sanitizeRemove(n *html.Node) (error) {
   	case html.DoctypeNode:
 	}
 
-	// loop through child nodes
-	var nextChild *html.Node
-	for c := n.FirstChild; c != nil; c = nextChild {
-
-		// grab a reference to the next child before
-		// processing the current one; it may be removed
-		// in processing
-		nextChild = c.NextSibling
-		err := w.sanitizeRemove(c)
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		err := w.sanitizeNode(c, handleElement)
 		if err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+// sanitizeRemove traverses pre-order over the nodes,
+// removing any element nodes that are not whitelisted
+// and and removing any attributes that are not whitelisted
+// from a given element node
+func (w *Whitelist) sanitizeRemove(n *html.Node) (error) {
+	return w.sanitizeNode(n, func(n *html.Node) (bool) {
+  		if !w.HasElement(n.Data) {
+  			if n.Parent != nil {
+	  			nextSibling := n.NextSibling
+  				n.Parent.RemoveChild(n)
+
+  				// reset next sibling to support continuation
+  				// of linked-list style traversal of parent node's children
+  				n.NextSibling = nextSibling
+  			}
+  			return false
+  		}
+  		return true
+	})
 }
 
 // remove non whitelisted elements entirely
@@ -133,43 +156,27 @@ func (w *Whitelist) SanitizeRemove(reader io.Reader) (string, error) {
 }
 
 func (w *Whitelist) sanitizeUnwrap(n *html.Node) (error) {
-	switch n.Type {
-	case html.ErrorNode:
-		return errors.New("Unable to parse HTML")
-  	case html.TextNode:
-  		w.handleText(n)
-  	case html.DocumentNode:
-  	case html.ElementNode:
-  		if !w.HasElement(n.Data) && n.Parent != nil {
-  			insertBefore := n.NextSibling
-  			firstChild := n.FirstChild
-  			for c := n.FirstChild; c != nil; {
-  				nodeToUnwrap := c
-  				c = c.NextSibling
-  				
-  				n.RemoveChild(nodeToUnwrap)
-  				n.Parent.InsertBefore(nodeToUnwrap, insertBefore)
-			}
-			n.Parent.RemoveChild(n)
-			n.NextSibling = firstChild
-			break
-  		}
-
-  		w.sanitizeAttributes(n)
-  	case html.CommentNode:
-  		w.handleComment(n)
-  	case html.DoctypeNode:
-	}
-
-	// loop through child nodes
-	for c := n.FirstChild; c != nil; c = c.NextSibling {
-		err := w.sanitizeUnwrap(c)
-		if err != nil {
-			return err
+	return w.sanitizeNode(n, func(n *html.Node) (bool) {
+		if w.HasElement(n.Data) || n.Parent == nil {
+			return true
 		}
-	}
 
-	return nil
+		insertBefore := n.NextSibling
+		firstChild := n.FirstChild
+		for c := n.FirstChild; c != nil; {
+			nodeToUnwrap := c
+			c = c.NextSibling
+			
+			n.RemoveChild(nodeToUnwrap)
+			n.Parent.InsertBefore(nodeToUnwrap, insertBefore)
+		}
+		n.Parent.RemoveChild(n)
+
+		// reset next sibling to support continuation
+  		// of linked-list style traversal of parent node's children
+		n.NextSibling = firstChild
+		return false
+	})
 }
 
 // unwrap non whitelisted elements

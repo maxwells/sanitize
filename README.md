@@ -100,11 +100,12 @@ fmt.Printf("sanitized html: %d", sanitized)
 ```
 
 ### Steps to 1.0
-- [ ] Support sanitization that unwraps non-whitelisted nodes, allowing the text and/or whitelisted subtree through
+- [x] Support sanitization that unwraps non-whitelisted nodes, allowing the text and/or whitelisted subtree through
 - [x] Whitelist-level configuration options (eg. `stripWhitespace`)
-- [ ] Efficient attribute checking by not allocating a new slice on every whitelisted attribute for an element
+- [x] Efficient attribute checking by not allocating a new slice on every whitelisted attribute for an element
+- [ ] Support sanitization of HTML fragments (instead of just full documents)
 - [ ] Support non `string` type attribute values
-- [ ] Tests
+- [ ] Pass all Tests
 - [x] Refactor configuration parsing to have []byte interface instead of expecting a filepath
 - [ ] Create sane defaults
 

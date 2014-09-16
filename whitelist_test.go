@@ -34,9 +34,14 @@ func TestSanitizeRemoveRemovesNonWhitelistedNodes(t *testing.T) {
 							<i>Italic</i>
 							<em>Emphatic</em>
 						</div>
+						<div>
+							<ul>
+								<li>after</li>
+							</ul>
+						</div>
 					</body>
 				</html>`
-	expectedOutput := `<!DOCTYPE html><html><head><title>My Title</title></head><body><div><i>Italic</i></div></body></html>`
+	expectedOutput := `<!DOCTYPE html><html><head><title>My Title</title></head><body><div><i>Italic</i></div><div></div></body></html>`
 	config := `{
 		"stripWhitespace": true,
 		"elements": {
@@ -123,8 +128,8 @@ func TestStripWhitespace(t *testing.T) {
 }
 
 func TestStripComments(t *testing.T) {
-	htmlDoc := `<!DOCTYPE html><!-- hello world --><html></html>`
-	expectedOutput := `<!DOCTYPE html><html></html>`
+	htmlDoc := `<!DOCTYPE html><!-- hello world --><html><head></head><body></body></html>`
+	expectedOutput := `<!DOCTYPE html><html><head></head><body></body></html>`
 	config := `{
 		"stripComments": true,
 		"elements": {
@@ -139,3 +144,57 @@ func TestStripComments(t *testing.T) {
 		t.Errorf("failed: %s != %s", output, expectedOutput)
 	}
 }
+
+// func TestCanSanitizeDocumentFragment(t *testing.T) {
+// 	htmlDoc := `<div class="my-class" style="width:100%;"><ul><li>element</li></ul><b>bold</b></div>`
+// 	expectedOutput := `<div class="my-class"><ul>element</ul><b>bold</b></div>`
+// 	config := `{
+// 		"stripComments": true,
+// 		"elements": {
+// 			"div": ["class"],
+// 			"ul": [],
+// 			"b": []
+// 		}
+// 	}`
+
+// 	whitelist, _ := NewWhitelist([]byte(config))
+// 	output, _ := whitelist.SanitizeUnwrapFragment(strings.NewReader(htmlDoc))
+
+// 	if output != expectedOutput {
+// 		t.Errorf("failed: %s != %s", output, expectedOutput)
+// 	}	
+// }
+
+// func TestCanStripHead(t *testing.T) {
+// 	htmlDoc := `<!DOCTYPE html><html><head></head></html>`
+// 	expectedOutput := `<!DOCTYPE html><html></html>`
+// 	config := `{
+// 		"elements": {
+// 			"html": []
+// 		}
+// 	}`
+
+// 	whitelist, _ := NewWhitelist([]byte(config))
+// 	output, _ := whitelist.SanitizeRemove(strings.NewReader(htmlDoc))
+
+// 	if output != expectedOutput {
+// 		t.Errorf("failed: %s != %s", output, expectedOutput)
+// 	}
+// }
+
+// func TestCanStripBody(t *testing.T) {
+// 	htmlDoc := `<!DOCTYPE html><html><body></body></html>`
+// 	expectedOutput := `<!DOCTYPE html><html></html>`
+// 	config := `{
+// 		"elements": {
+// 			"html": []
+// 		}
+// 	}`
+
+// 	whitelist, _ := NewWhitelist([]byte(config))
+// 	output, _ := whitelist.SanitizeRemove(strings.NewReader(htmlDoc))
+
+// 	if output != expectedOutput {
+// 		t.Errorf("failed: %s != %s", output, expectedOutput)
+// 	}
+// }

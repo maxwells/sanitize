@@ -139,6 +139,7 @@ sanitized, _ := whitelist.SanitizeUnwrapFragment(f)
 - [ ] Support non `string` type attribute values
 - [x] Refactor configuration parsing to have []byte interface instead of expecting a filepath
 - [ ] Create sane defaults
+- [ ] Usable godoc documentation
 
 ### Known Issues
 

@@ -101,13 +101,42 @@ sanitized, _ := whitelist.SanitizeRemove(f) // takes any io.Reader
 fmt.Printf("sanitized html: %d", sanitized)
 ```
 
+### Supported operations
+
+```go
+whitelist, err := sanitize.WhitelistFromFile("./path/to/file.json")
+f, _ := os.Open("./path/to/example.html")
+
+// sanitize a full HTML document by removing
+// non-whitelisted elements and attributes
+sanitized, _ := whitelist.SanitizeRemove(f)
+
+// sanitize a full HTML document by reattaching
+// the children of non-whitelisted elements to the
+// non-whitelisted parent; also removes non whitelisted
+// attributes for any element
+sanitized, _ := whitelist.SanitizeUnwrap(f)
+
+// sanitize an HTML document fragment (ie no html,
+// head, or body tags) by removing
+// non-whitelisted elements and attributes
+sanitized, _ := whitelist.SanitizeRemoveFragment(f)
+
+// sanitize an HTML document fragment (ie no html,
+// head, or body tags) by reattaching
+// the children of non-whitelisted elements to the
+// non-whitelisted parent; also removes non whitelisted
+// attributes for any element
+sanitized, _ := whitelist.SanitizeUnwrapFragment(f)
+
+```
+
 ### Steps to 1.0
 - [x] Support sanitization that unwraps non-whitelisted nodes, allowing the text and/or whitelisted subtree through
 - [x] Whitelist-level configuration options (eg. `stripWhitespace`)
 - [x] Efficient attribute checking by not allocating a new slice on every whitelisted attribute for an element
-- [ ] Support sanitization of HTML fragments (instead of just full documents)
+- [x] Support sanitization of HTML fragments (instead of just full documents)
 - [ ] Support non `string` type attribute values
-- [ ] Pass all Tests
 - [x] Refactor configuration parsing to have []byte interface instead of expecting a filepath
 - [ ] Create sane defaults
 

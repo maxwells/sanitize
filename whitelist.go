@@ -136,7 +136,7 @@ func (w *Whitelist) sanitizeRemove(n *html.Node) (error) {
 	})
 }
 
-// remove non whitelisted elements entirely
+// remove non whitelisted elements entirely from a full HTML document
 func (w *Whitelist) SanitizeRemove(reader io.Reader) (string, error) {
 	var buffer bytes.Buffer
 
@@ -155,6 +155,33 @@ func (w *Whitelist) SanitizeRemove(reader io.Reader) (string, error) {
 	return buffer.String(), err
 }
 
+// remove non whitelisted elements in provided document fragment
+//
+// given the go.net/html library creates a document root with a head
+// and body by default around the provided fragment, simply unwrap
+// those portions along before performing the sanitizeRemove function
+// on the remaining children
+func (w *Whitelist) SanitizeRemoveFragment(reader io.Reader) (string, error) {
+	var buffer bytes.Buffer
+
+	doc, err := html.Parse(reader)
+	if err != nil {
+		return buffer.String(), err
+	}
+
+	err = renderForEachChild(doc.FirstChild.FirstChild, &buffer, w.sanitizeRemove)
+	if err != nil {
+		return buffer.String(), err
+	}
+
+	err = renderForEachChild(doc.FirstChild.LastChild, &buffer, w.sanitizeRemove)
+
+	return buffer.String(), err
+}
+
+// sanitizeUnwrap traverses pre-order over the nodes, reattaching
+// the whitelisted children of any element nodes that are not
+// whitelisted to the parent of the unwhitelisted node
 func (w *Whitelist) sanitizeUnwrap(n *html.Node) (error) {
 	return w.sanitizeNode(n, func(n *html.Node) (bool) {
 		if w.HasElement(n.Data) || n.Parent == nil {
@@ -179,7 +206,7 @@ func (w *Whitelist) sanitizeUnwrap(n *html.Node) (error) {
 	})
 }
 
-// unwrap non whitelisted elements
+// unwrap non whitelisted elements from a full HTML document
 func (w *Whitelist) SanitizeUnwrap(reader io.Reader) (string, error) {
 	var buffer bytes.Buffer
 
@@ -196,4 +223,51 @@ func (w *Whitelist) SanitizeUnwrap(reader io.Reader) (string, error) {
 	err = html.Render(&buffer, doc)
 
 	return buffer.String(), err
+}
+
+
+// unwrap non whitelisted elements in provided document fragment
+//
+// given the go.net/html library creates a document root with a head
+// and body by default around the provided fragment, simply unwrap
+// those portions along before performing the sanitizeUnwrap function
+// on the remaining children
+func (w *Whitelist) SanitizeUnwrapFragment(reader io.Reader) (string, error) {
+	var buffer bytes.Buffer
+
+	doc, err := html.Parse(reader)
+	if err != nil {
+		return buffer.String(), err
+	}
+
+	err = renderForEachChild(doc.FirstChild.FirstChild, &buffer, w.sanitizeUnwrap)
+	if err != nil {
+		return buffer.String(), err
+	}
+
+	err = renderForEachChild(doc.FirstChild.LastChild, &buffer, w.sanitizeUnwrap)
+
+	return buffer.String(), err
+}
+
+// render for every child of the node provided,
+// render that node into the provided buffer
+// after performing the provided function on it
+func renderForEachChild(n *html.Node, buffer *bytes.Buffer, fn func(*html.Node) (error)) (error) {
+	for c := n.FirstChild; c != nil; c = c.NextSibling{
+		err := fn(c)
+		if err != nil {
+			return err
+		}
+
+		if c.Parent == n {
+			// this node wasn't removed
+			err = html.Render(buffer, c)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }

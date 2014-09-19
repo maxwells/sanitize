@@ -69,7 +69,7 @@ func TestSanitizeUnwrapUnwrapsNonWhitelistedNodes(t *testing.T) {
 						<title>My Title</title>
 					</head>
 					<body>
-						<div>
+						<div class="not-allowed">
 							<b>Bold</b>
 							<i>Italic</i>
 							<em>Emphatic</em>
@@ -145,25 +145,102 @@ func TestStripComments(t *testing.T) {
 	}
 }
 
-// func TestCanSanitizeDocumentFragment(t *testing.T) {
-// 	htmlDoc := `<div class="my-class" style="width:100%;"><ul><li>element</li></ul><b>bold</b></div>`
-// 	expectedOutput := `<div class="my-class"><ul>element</ul><b>bold</b></div>`
-// 	config := `{
-// 		"stripComments": true,
-// 		"elements": {
-// 			"div": ["class"],
-// 			"ul": [],
-// 			"b": []
-// 		}
-// 	}`
 
-// 	whitelist, _ := NewWhitelist([]byte(config))
-// 	output, _ := whitelist.SanitizeUnwrapFragment(strings.NewReader(htmlDoc))
+func TestCanSanitizeRemoveDocumentFragment(t *testing.T) {
+	htmlDoc := `<div class="my-class" style="width:100%;"><ul><li>element</li></ul><b>bold</b></div>`
+	expectedOutput := `<div class="my-class"><ul></ul><b>bold</b></div>`
+	config := `{
+		"stripComments": true,
+		"elements": {
+			"div": ["class"],
+			"ul": [],
+			"b": []
+		}
+	}`
 
-// 	if output != expectedOutput {
-// 		t.Errorf("failed: %s != %s", output, expectedOutput)
-// 	}	
-// }
+	whitelist, _ := NewWhitelist([]byte(config))
+	output, _ := whitelist.SanitizeRemoveFragment(strings.NewReader(htmlDoc))
+
+	if output != expectedOutput {
+		t.Errorf("failed: %s != %s", output, expectedOutput)
+	}
+}
+
+func TestCanSanitizeRemoveDocumentFragmentHeadType(t *testing.T) {
+	htmlDoc := `<script src="/path/to/script.js" type="text/javascript" disallowed=true>alert("something");</script><div></div>`
+	expectedOutput := `<script src="/path/to/script.js" type="text/javascript">alert("something");</script>`
+	config := `{
+		"stripComments": true,
+		"elements": {
+			"script": ["src", "type"]
+		}
+	}`
+
+	whitelist, _ := NewWhitelist([]byte(config))
+	output, _ := whitelist.SanitizeUnwrapFragment(strings.NewReader(htmlDoc))
+
+	if output != expectedOutput {
+		t.Errorf("failed: %s != %s", output, expectedOutput)
+	}
+}
+
+func TestCanSanitizeRemoveDocumentFragmentHeadTypeInline(t *testing.T) {
+	htmlDoc := `<div></div><script src="/path/to/script.js" type="text/javascript" disallowed=true>alert("something");</script><div></div>`
+	expectedOutput := `<div></div><script src="/path/to/script.js" type="text/javascript">alert("something");</script><div></div>`
+	config := `{
+		"stripComments": true,
+		"elements": {
+			"div": [],
+			"script": ["src", "type"]
+		}
+	}`
+
+	whitelist, _ := NewWhitelist([]byte(config))
+	output, _ := whitelist.SanitizeUnwrapFragment(strings.NewReader(htmlDoc))
+
+	if output != expectedOutput {
+		t.Errorf("failed: %s != %s", output, expectedOutput)
+	}
+}
+
+
+func TestCanSanitizeUnwrapDocumentFragment(t *testing.T) {
+	htmlDoc := `<div class="my-class" style="width:100%;"><ul><li>element</li></ul><b>bold</b></div>`
+	expectedOutput := `<div class="my-class"><ul>element</ul><b>bold</b></div>`
+	config := `{
+		"stripComments": true,
+		"elements": {
+			"div": ["class"],
+			"ul": [],
+			"b": []
+		}
+	}`
+
+	whitelist, _ := NewWhitelist([]byte(config))
+	output, _ := whitelist.SanitizeUnwrapFragment(strings.NewReader(htmlDoc))
+
+	if output != expectedOutput {
+		t.Errorf("failed: %s != %s", output, expectedOutput)
+	}
+}
+
+func TestCanSanitizeUnwrapDocumentFragmentHeadType(t *testing.T) {
+	htmlDoc := `<script src="/path/to/script.js" type="text/javascript" disallowed=true>alert("something");</script><div></div>`
+	expectedOutput := `<script src="/path/to/script.js" type="text/javascript">alert("something");</script>`
+	config := `{
+		"stripComments": true,
+		"elements": {
+			"script": ["src", "type"]
+		}
+	}`
+
+	whitelist, _ := NewWhitelist([]byte(config))
+	output, _ := whitelist.SanitizeUnwrapFragment(strings.NewReader(htmlDoc))
+
+	if output != expectedOutput {
+		t.Errorf("failed: %s != %s", output, expectedOutput)
+	}
+}
 
 func TestCanStripHead(t *testing.T) {
 	htmlDoc := `<!DOCTYPE html><html><head></head></html>`
